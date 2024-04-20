@@ -6,6 +6,7 @@ import {
   IconButton,
   Paper,
   Skeleton,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -44,8 +45,15 @@ class VideoInfo {
   }
 }
 
+enum LanuageMode {
+  zh = 'zh',
+  en = 'en'
+}
+
 export function ChartsPanel () {
-  const [videoInfo, setVideoInfo] = useState<VideoInfo | null>()
+  const [enVideoInfo, setEnVideoInfo] = useState<VideoInfo | null>()
+  const [zhVideoInfo, setZhVideoInfo] = useState<VideoInfo | null>()
+  const [languageMode, setLanguageMode] = useState<LanuageMode>(LanuageMode.en)
 
   const fetchVideoInfo = () => {
     fetch(getBackendUrl() + '/api/video/info', {
@@ -59,15 +67,14 @@ export function ChartsPanel () {
     })
       .then(response => response.json())
       .then(data => {
-        setVideoInfo(new VideoInfo(data.title, data.description))
+        setEnVideoInfo(new VideoInfo(data.title, data.description))
+		setZhVideoInfo(new VideoInfo(data.zh_title, data.zh_description))
       })
   }
 
   useEffect(() => {
     fetchVideoInfo()
   }, [])
-
-
 
   const cards = [
     null,
@@ -80,6 +87,7 @@ export function ChartsPanel () {
     null
   ] as (CardInfo | null)[]
 
+  const videoInfo = languageMode === LanuageMode.en ? enVideoInfo : zhVideoInfo
 
   return (
     <main className='main flex flex-col pl-4 pr-4 pb-4 gap-10 overflow-y-auto'>
@@ -107,22 +115,37 @@ export function ChartsPanel () {
           </CardContent>
         </Card>
       </div>
+<div className='flex flex-row items-center'>
+	<Typography variant='h5' color='textPrimary' gutterBottom>
+	English/中文
+	</Typography>
+	<Switch value={languageMode===LanuageMode.en} onChange={()=>{
+		setLanguageMode(languageMode===LanuageMode.en?LanuageMode.zh:LanuageMode.en)
+	}}></Switch>
 
+</div>
       <div className='flex flex-row gap-5 flex-wrap justify-start'>
         {cards.map(card => (
           <div className='w-100 p-4 h-100 bg-slate-300 overflow-y-auto'>
-            <Typography variant='h5' color='textPrimary' gutterBottom>{videoInfo ? videoInfo.title : ''}</Typography>
+            <Typography variant='h5' color='textPrimary' gutterBottom>
+              {videoInfo ? videoInfo.title : ''}
+            </Typography>
             <Typography variant='body1' color='textPrimary' gutterBottom>
               {videoInfo
-                ? videoInfo.description.split('\\n').map((line, index) =>{ 
-					console.log('line:', line,"-------------",videoInfo.description)
-					return (
-                    <React.Fragment key={index}>
-                      {line}
-                      <br />
-                    </React.Fragment>
-                  )
-				})
+                ? videoInfo.description.split('\\n').map((line, index) => {
+                    console.log(
+                      'line:',
+                      line,
+                      '-------------',
+                      videoInfo.description
+                    )
+                    return (
+                      <React.Fragment key={index}>
+                        {line}
+                        <br />
+                      </React.Fragment>
+                    )
+                  })
                 : ''}
             </Typography>
           </div>
