@@ -1,0 +1,298 @@
+import { FileDownload, TrendingDown, TrendingUp } from '@mui/icons-material'
+import {
+  Button,
+  CardActions,
+  CardContent,
+  IconButton,
+  Paper,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tooltip,
+  Typography
+} from '@mui/material'
+import Card from '@mui/material/Card'
+import ReactApexChart from 'react-apexcharts'
+import {
+  CardInfo,
+  createValidationResult,
+  generateBarOptions,
+  generateBarSeries,
+  generateBrokenLineOptions,
+  generateBrokenLineSeries,
+  generateSectorDiagramOptions,
+  generateSectorDiagramSeries,
+  ValidationData,
+  ValidationResult,
+  validationTypeMap
+} from '../../dataHandler'
+import { useEffect, useState } from 'react'
+import { getBackendUrl } from '../../api'
+import { NavLink } from 'react-router-dom'
+
+export function ChartsPanel () {
+  // fetch 获取最近的数据
+  const [validationResult, setValidationResult] =
+    useState<ValidationResult | null>(null)
+  const [htmlData, setHtmlData] = useState<string>('')
+  const fetchRecentData = () => {
+    fetch(getBackendUrl() + '/api/records/recent')
+      .then(response => response.json())
+      .then(data => {
+        setValidationResult(createValidationResult(data))
+      })
+  }
+  useEffect(() => {
+    fetchRecentData()
+  }, [])
+  const cards = [
+    validationResult?.hasData()
+      ? validationResult.calculateTotalQuantityCardInfo()
+      : null,
+    validationResult?.hasData()
+      ? validationResult.calculateErrorRateCardInfo()
+      : null,
+    validationResult?.hasData()
+      ? validationResult.calculateErrorQuantityCardInfo()
+      : null,
+    validationResult?.hasData()
+      ? validationResult.calculateDurationCardInfo()
+      : null
+  ] as CardInfo[]
+
+  const generateHtmlFile = () => {
+    if (validationResult) {
+      const data = validationResult.generateHtml()
+      let startTime = validationResult.getNewestStartTime()
+      const blob = new Blob([data], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'validation-' + startTime + '.html'
+      a.click()
+      URL.revokeObjectURL(url)
+    }
+  }
+  return (
+    <main className='main flex flex-col pl-4 pr-4 pb-4 gap-10 overflow-y-auto'>
+      <div className='pt-8 flex flex-row items-center gap-4'>
+        <Card
+          className='flex-1'
+          style={{
+            backgroundColor: '#F7F9FB',
+            borderRadius: '1.5rem'
+          }}
+          elevation={0}
+        >
+          <CardContent className='flex flex-row items-center justify-center'>
+            <Typography>查看详情:</Typography>
+            <NavLink to={'/detail'}>
+              <IconButton
+                aria-label='add an alarm'
+                onClick={() => {
+                  // generateHtmlFile()
+                }}
+              >
+                <FileDownload />
+              </IconButton>
+            </NavLink>
+            {/* <IconButton aria-label='add an alarm' onClick={() => {
+          generateHtmlFile()
+        }}>
+          <FileDownload />
+        </IconButton> */}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className='flex flex-row gap-10'>
+        {cards.map(card =>
+          card ? (
+            <Card
+              className='flex-1 p-4 '
+              style={{
+                backgroundColor: card.bgColor,
+                borderRadius: '1.5rem'
+              }}
+              elevation={0}
+            >
+              <CardContent>
+                <Typography
+                  sx={{
+                    fontSize: 14
+                  }}
+                  color='text.secondary'
+                  gutterBottom
+                >
+                  {card.title}
+                </Typography>
+                <div className='flex flex-row items-center justify-between'>
+                  <Typography variant='h4' component='div'>
+                    {card.total}
+                  </Typography>
+                  <Typography
+                    // sx={{
+                    //   mb: 1.5
+                    // }}
+                    color='text.secondary'
+                  >
+                    {card.delta}
+                  </Typography>
+                  {card.levelUp === undefined ? (
+                    <></>
+                  ) : card.levelUp ? (
+                    <TrendingUp color={card.color} />
+                  ) : (
+                    <TrendingDown color={card.color} />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Skeleton
+              variant='rectangular'
+              className='flex-1 p-4 '
+              style={{
+                borderRadius: '2rem',
+                height: '10rem'
+              }}
+            />
+          )
+        )}
+      </div>
+      <div className='flex flex-row gap-10'>
+        <Card
+          className='flex-2'
+          style={{
+            backgroundColor: '#F7F9FB',
+            borderRadius: '1.5rem'
+          }}
+          elevation={0}
+        >
+          <CardContent>
+            <Typography
+              sx={{
+                fontSize: 20,
+                color: validationResult?.hasData()
+                  ? validationResult.getNewestIsSuccess()
+                    ? '#3C50E0'
+                    : '#80CAEE'
+                  : '#3C50E0'
+              }}
+              gutterBottom
+            >
+              {validationResult?.hasData()
+                ? validationResult.getNewestIsSuccess()
+                  ? 'Pass'
+                  : 'Fail'
+                : 'Loading'}
+            </Typography>
+            <ReactApexChart
+              options={generateSectorDiagramOptions('#A8C5DA', '#B1E3FF')}
+              series={generateSectorDiagramSeries(
+                validationResult?.hasData()
+                  ? validationResult.getNewestErrorRate()
+                  : 0
+              )}
+              type='donut'
+            />
+          </CardContent>
+        </Card>
+        <Card
+          className='flex-1'
+          style={{
+            backgroundColor: '#F7F9FB',
+            borderRadius: '1.5rem'
+          }}
+          elevation={0}
+        >
+          <CardContent>
+            <ReactApexChart
+              options={generateBarOptions(
+                '#B1E3FF',
+                validationResult?.hasData()
+                  ? validationResult.getNewestTypeNames()
+                  : []
+              )}
+              series={generateBarSeries(
+                validationResult?.hasData()
+                  ? validationResult.getNewestTypeErrorRates()
+                  : []
+              )}
+              type='bar'
+              height={350}
+            />
+          </CardContent>
+        </Card>
+      </div>
+      <div className='flex flex-row gap-4'>
+        <Card
+          className='flex-1'
+          style={{
+            backgroundColor: '#F7F9FB',
+            borderRadius: '1.5rem'
+          }}
+          elevation={0}
+        >
+          <CardContent>
+            <ReactApexChart
+              options={generateBrokenLineOptions(
+                '#A8C5DA',
+                validationResult?.hasData()
+                  ? validationResult.getAllStartTimes(true)
+                  : []
+              )}
+              series={generateBrokenLineSeries(
+                validationResult?.hasData()
+                  ? validationResult.getAllErrorRate(true)
+                  : []
+              )}
+              type='area'
+              height={350}
+              width={'100%'}
+            />
+          </CardContent>
+        </Card>
+      </div>
+      <div className='w-full h-full'>
+        <TableContainer
+          component={Paper}
+          style={{
+            backgroundColor: '#F7F9FB',
+            borderRadius: '1.5rem'
+          }}
+          elevation={0}
+        >
+          <Table sx={{ minWidth: 650 }} aria-label='simple table'>
+            <TableHead>
+              <TableRow>
+                <TableCell>开始时间</TableCell>
+                <TableCell align='left'>数量</TableCell>
+                <TableCell align='left'>错误率</TableCell>
+                <TableCell align='left'>错误数量</TableCell>
+                <TableCell align='left'>时长</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {validationResult
+                ? validationResult.generateTableInfos().map(row => (
+                    <TableRow key={row.startTime}>
+                      <TableCell>{row.startTime}</TableCell>
+                      <TableCell align='left'>{row.totalQuantity}</TableCell>
+                      <TableCell align='left'>{row.errorRate}</TableCell>
+                      <TableCell align='left'>{row.errorQuantity}</TableCell>
+                      <TableCell align='left'>{row.duration}</TableCell>
+                    </TableRow>
+                  ))
+                : null}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </div>
+    </main>
+  )
+}
