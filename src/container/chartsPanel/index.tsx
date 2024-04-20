@@ -33,22 +33,42 @@ import {
 import { useEffect, useState } from 'react'
 import { getBackendUrl } from '../../api'
 import { NavLink } from 'react-router-dom'
+import React from 'react'
+
+class VideoInfo {
+  title: string
+  description: string
+  constructor (title: string, description: string) {
+    this.title = title
+    this.description = description
+  }
+}
 
 export function ChartsPanel () {
-  // fetch 获取最近的数据
-  const [validationResult, setValidationResult] =
-    useState<ValidationResult | null>(null)
-  const [htmlData, setHtmlData] = useState<string>('')
-  const fetchRecentData = () => {
-    fetch(getBackendUrl() + '/api/records/recent')
+  const [videoInfo, setVideoInfo] = useState<VideoInfo | null>()
+
+  const fetchVideoInfo = () => {
+    fetch(getBackendUrl() + '/api/video/info', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url: 'https://www.youtube.com/watch?v=xQTSBtaE4do'
+      })
+    })
       .then(response => response.json())
       .then(data => {
-        setValidationResult(createValidationResult(data))
+        setVideoInfo(new VideoInfo(data.title, data.description))
       })
   }
+
   useEffect(() => {
-    // fetchRecentData()
+    fetchVideoInfo()
   }, [])
+
+
+
   const cards = [
     null,
     null,
@@ -59,6 +79,7 @@ export function ChartsPanel () {
     null,
     null
   ] as (CardInfo | null)[]
+
 
   return (
     <main className='main flex flex-col pl-4 pr-4 pb-4 gap-10 overflow-y-auto'>
@@ -89,14 +110,22 @@ export function ChartsPanel () {
 
       <div className='flex flex-row gap-5 flex-wrap justify-start'>
         {cards.map(card => (
-          <Skeleton
-            variant='rectangular'
-            className='w-100 p-4 '
-            style={{
-              borderRadius: '2rem',
-              height: '20rem'
-            }}
-          />
+          <div className='w-100 p-4 h-100 bg-slate-300 '>
+            <Typography variant='h5' color='textPrimary' gutterBottom>{videoInfo ? videoInfo.title : ''}</Typography>
+            <Typography variant='body1' color='textPrimary' gutterBottom>
+              {videoInfo
+                ? videoInfo.description.split('\\n').map((line, index) =>{ 
+					console.log('line:', line,"-------------",videoInfo.description)
+					return (
+                    <React.Fragment key={index}>
+                      {line}
+                      <br />
+                    </React.Fragment>
+                  )
+				})
+                : ''}
+            </Typography>
+          </div>
         ))}
       </div>
     </main>
