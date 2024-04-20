@@ -110,7 +110,7 @@ export function ChartsPanel () {
 
       <div className='flex flex-row gap-5 flex-wrap justify-start'>
         {cards.map(card => (
-          <div className='w-100 p-4 h-100 bg-slate-300 '>
+          <div className='w-100 p-4 h-100 bg-slate-300 overflow-y-auto'>
             <Typography variant='h5' color='textPrimary' gutterBottom>{videoInfo ? videoInfo.title : ''}</Typography>
             <Typography variant='body1' color='textPrimary' gutterBottom>
               {videoInfo
