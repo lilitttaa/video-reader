@@ -32,6 +32,3 @@ class YoutubeScrapy:
                     return match.replace("\\\"", "\"")
             except :
                 pass
-
-youtube_scrapy = YoutubeScrapy("https://www.youtube.com/watch?v=xQTSBtaE4do")
-print(youtube_scrapy.get_description())

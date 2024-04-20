@@ -53,16 +53,6 @@ user_edit_model = rest_api.model(
     },
 )
 
-with open("config.json", "r") as f:
-    config = json.load(f)
-    validation_error_log_path = config["validation_error_log_path"]
-    validation_statistic_path = config["validation_statistic_path"]
-    validation_db_path = config["validation_db_path"]
-    unreal_cmd_path = config["unreal_cmd_path"]
-    em_project_path = config["em_project_path"]
-    validation_config_path = config["validation_config_path"]
-    svn_repo_path = config["svn_repo_path"]
-
 class User:
     def __init__(self, username: str, email: str):
         self.username = username
@@ -227,122 +217,6 @@ def error_code_2_status(errorCode: int) -> str:
         return "failed"
 
 
-class ValidationExecutor:
-    def __init__(self):
-        self.start_time: datetime = None
-        self.duration: int = 0
-        self.uuid: int = uuid.uuid4().hex
-        self.exit_code: int = 0
-        self.error_info: str = ""
-        self.statistic_info: str = ""
-
-    async def execute(self, command: str):
-        self.start_time = datetime.datetime.now()
-        svn.update_svn_repo(svn_repo_path)
-        
-        process = subprocess.Popen(
-            command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,  # 确保输出是字符串而不是字节
-        )
-
-        # # 异步读取输出
-        stdout_data, stderr_data = process.communicate()
-        self._log(stdout_data, stderr_data)
-
-        self.exitCode = process.returncode
-
-        # 读取错误信息Log文件
-        error_file_path = validation_error_log_path
-        statistic_file_path = (
-            validation_statistic_path
-        )
-        with open(error_file_path, "r", encoding="utf-8-sig") as f:
-            self.error_info = f.read()
-
-        parser = ValidationErrorParser()
-        error_infos = parser.parse(self.error_info)
-        for error_info in error_infos:
-            print("asset:",error_info['asset_path'])
-            latest_commit_info = svn.get_latest_svn_commit_info_before_time(self.start_time, error_info['asset_path'])
-            if latest_commit_info:
-                error_info["latest_commit_info"] = {
-                    "revision": latest_commit_info.revision,
-                    "author": latest_commit_info.author,
-                }
-            else:
-                error_info["latest_commit_info"] = {
-                    "revision": 'Unknown',
-                    "author": 'Unknown author, asset has been deleted'
-                }
-        self.error_info = json.dumps(error_infos)
-
-        with open(statistic_file_path, "r") as f:
-            self.statistic_info = f.read()
-
-        self.duration = (datetime.datetime.now() - self.start_time).total_seconds()
-
-        gDatabase.add_validation_info(
-            ValidationInfo(
-                id=self.uuid,
-                start_time=self.start_time,
-                duration=self.duration,
-                status=error_code_2_status(self.exit_code),
-                statistic_info=self.statistic_info,
-                error_info=self.error_info,
-            )
-        )
-
-        # 根据退出码处理结果
-        if self.exit_code == 0:
-            # 处理成功情况
-            print("Command executed successfully.")
-        elif self.exit_code == 1:
-            # 处理其他错误情况
-            print("An error occurred while executing the command.")
-        else:
-            # 处理失败情况
-            print("Command execution failed with exit code:", self.exit_code)
-
-    def _log(self, stdout_data: str, stderr_data: str):
-        if stdout_data:
-            app.logger.info("Standard Output:")
-            app.logger.info(stdout_data)
-
-        if stderr_data:
-            app.logger.info("Standard Error:")
-            app.logger.info(stderr_data)
-
-
-class ValidationWorker(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.command = unreal_cmd_path+" "+em_project_path+" -Run=DataValidation -Validator=/Script/EMEditor.EMAssetValidator  -Config="+validation_config_path
-        self.executor = ValidationExecutor()
-        self.is_running = False
-
-    def run(self):
-        if self.is_running:
-            return
-        self.is_running = True
-        self.run_internal()
-        self.is_running = False
-        return
-
-    def run_internal(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        try:
-            loop.run_until_complete(self.executor.execute(self.command))
-        except Exception as e:
-            tb_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
-            app.logger.info(tb_str)
-        finally:
-            loop.close()
-
 
 class ValidationErrorInfo:
     def __init__(self, asset_path: str, error_message: str):
@@ -370,12 +244,6 @@ class ValidationErrorParser:
         return error_infos
 
 
-gWorker = ValidationWorker()
-gDatabase = ValidationDatabaseWrapper(
-    validation_db_path
-)
-svn = SVNClient()
-
 @rest_api.route("/api/trigger/status")
 class TriggerStatus(Resource):
     def get(self):
@@ -389,11 +257,7 @@ class TriggerStatus(Resource):
 class Trigger(Resource):
     # @token_required
     def post(self):
-        if gWorker.is_running:
-            return {"status": "already running"}, 200
-        gWorker.start()
-        return {"status": "started"}, 200
-
+        pass
 
 @rest_api.route("/api/records/recent")
 class RecentRecords(Resource):
@@ -455,7 +319,7 @@ def default_error_handler(e):
 from bs4 import BeautifulSoup
 import requests
 
-@rest_api.route("api/video_info")
+@rest_api.route("/api/video/info")
 class VideoInfo(Resource):
     def post(self):
         try:
