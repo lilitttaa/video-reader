@@ -27,16 +27,6 @@ class VideoInfo(Base):
     title_zh= Column(String)
     description = Column(String)
     description_zh = Column(String)
-    
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "url": self.url,
-            "title": self.title,
-            "title_zh": self.title_zh,
-            "description": self.description,
-            "description_zh": self.description_zh,
-        }
 
 class ValidationDatabaseWrapper:
     def __init__(self, db_path):

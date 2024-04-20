@@ -17,20 +17,6 @@ import {
   Typography
 } from '@mui/material'
 import Card from '@mui/material/Card'
-import ReactApexChart from 'react-apexcharts'
-import {
-  CardInfo,
-  createValidationResult,
-  generateBarOptions,
-  generateBarSeries,
-  generateBrokenLineOptions,
-  generateBrokenLineSeries,
-  generateSectorDiagramOptions,
-  generateSectorDiagramSeries,
-  ValidationData,
-  ValidationResult,
-  validationTypeMap
-} from '../../dataHandler'
 import { useEffect, useState } from 'react'
 import { getBackendUrl } from '../../api'
 import { NavLink } from 'react-router-dom'
@@ -39,9 +25,13 @@ import React from 'react'
 class VideoInfo {
   title: string
   description: string
-  constructor (title: string, description: string) {
+  titleZH: string
+  descriptionZH: string
+  constructor (title: string, description: string, titleZH: string, descriptionZH: string) {
     this.title = title
     this.description = description
+	this.titleZH = titleZH
+	this.descriptionZH = descriptionZH
   }
 }
 
@@ -51,43 +41,30 @@ enum LanuageMode {
 }
 
 export function ChartsPanel () {
-  const [enVideoInfo, setEnVideoInfo] = useState<VideoInfo | null>()
-  const [zhVideoInfo, setZhVideoInfo] = useState<VideoInfo | null>()
+	const [videoInfos, setVideoInfos] = useState<VideoInfo[]>([])
   const [languageMode, setLanguageMode] = useState<LanuageMode>(LanuageMode.en)
 
   const fetchVideoInfo = () => {
-    fetch(getBackendUrl() + '/api/video/info', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        url: 'https://www.youtube.com/watch?v=xQTSBtaE4do'
-      })
-    })
+    fetch(getBackendUrl() + '/api/video/info')
       .then(response => response.json())
       .then(data => {
-        setEnVideoInfo(new VideoInfo(data.title, data.description))
-		setZhVideoInfo(new VideoInfo(data.zh_title, data.zh_description))
-      })
+		setVideoInfos(data.video_infos.map((videoInfo: any) => {
+			return new VideoInfo(videoInfo.title, videoInfo.description, videoInfo.title_zh, videoInfo.description_zh)
+		}))})
+		.catch((error) => {
+			console.error('Error:', error);
+		  });
   }
 
   useEffect(() => {
-    fetchVideoInfo()
+	fetchVideoInfo()
+	const interval = setInterval(() => {
+	  fetchVideoInfo()
+	}, 5000)
+	return () => clearInterval(interval)
   }, [])
 
-  const cards = [
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null
-  ] as (CardInfo | null)[]
 
-  const videoInfo = languageMode === LanuageMode.en ? enVideoInfo : zhVideoInfo
 
   return (
     <main className='main flex flex-col pl-4 pr-4 pb-4 gap-10 overflow-y-auto'>
@@ -125,28 +102,20 @@ export function ChartsPanel () {
 
 </div>
       <div className='flex flex-row gap-5 flex-wrap justify-start'>
-        {cards.map(card => (
+        {videoInfos.map(videoInfo => (
           <div className='w-100 p-4 h-100 bg-slate-300 overflow-y-auto'>
             <Typography variant='h5' color='textPrimary' gutterBottom>
-              {videoInfo ? videoInfo.title : ''}
+              {languageMode === LanuageMode.en ? videoInfo.title : videoInfo.titleZH}
             </Typography>
             <Typography variant='body1' color='textPrimary' gutterBottom>
-              {videoInfo
-                ? videoInfo.description.split('\\n').map((line, index) => {
-                    console.log(
-                      'line:',
-                      line,
-                      '-------------',
-                      videoInfo.description
-                    )
+              {(languageMode === LanuageMode.en ? videoInfo.description : videoInfo.descriptionZH).split('\\n').map((line, index) => {
                     return (
                       <React.Fragment key={index}>
                         {line}
                         <br />
                       </React.Fragment>
                     )
-                  })
-                : ''}
+                  })}
             </Typography>
           </div>
         ))}

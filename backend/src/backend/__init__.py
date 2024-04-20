@@ -344,14 +344,24 @@ class TaskState(Resource):
         task_state = global_queue.get_task_state()
         return {"task_state": task_state}, 200
 
+def video_info_to_dict(video_info:VideoInfo):
+    return {
+        "id": video_info.id,
+        "url": video_info.url,
+        "title": video_info.title,
+        "title_zh": video_info.title_zh,
+        "description": video_info.description,
+        "description_zh": video_info.description_zh,
+    }
+
 @rest_api.route("/api/video/info")
-class VideoInfo(Resource):
+class VideoInfoAPI(Resource):
     def get(self):
         video_infos = global_database.get_all_video_infos()
         video_infos_obj = []
         for video_info in video_infos:
             video_infos_obj.append(
-                video_info.to_dict()
+                video_info_to_dict(video_info)
             )
         return {"video_infos": video_infos_obj}, 200
 
@@ -401,7 +411,7 @@ class VideoInfoGenerator:
         self._url = url
 
     async def generate(self) -> None:
-        print("generate")
+        print("generate",self._url)
         youtube = YoutubeScrapy(self._url)
         title = youtube.get_title()
         app.logger.info(f"title: {title}")
