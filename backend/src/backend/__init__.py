@@ -14,7 +14,8 @@ import uuid
 from flask import Flask, request
 from flask_cors import CORS
 import jwt
-
+from g4f.models import Model, RetryProvider, Liaobots
+from g4f.client import Client
 from .youtube_crapy import YoutubeScrapy
 from .database import ValidationDatabaseWrapper, ValidationInfo
 from .svn import SVNClient, SVNCommitInfo
@@ -328,17 +329,48 @@ class VideoInfo(Resource):
             youtube = YoutubeScrapy(url)
             title = youtube.get_title()
             description = youtube.get_description()
-            return {"title": title, "description": description}, 200
+            zh_title = TranslatorEN2ZH().translate(title)
+            zh_description = TranslatorEN2ZH().translate(description)
+            return {"title": title, "description": description,"zh_title":zh_title,"zh_description":zh_description}, 200
         except Exception as e:
             return {"error": str(e)}, 500
     
 
-# class Translator:
-#     def __init__(self):
-#         pass
+class TranslatorEN2ZH:
+    def __init__(self) -> None:
+        self._client = Client()
 
-#     def translate(self, text: str, target_language: str) -> str:
-#         return "translated text"
+    def translate(self, text: str) -> str:
+        try:
+            response = self._client.chat.completions.create(
+                model=Model(
+                    name="gpt-3.5-turbo",
+                    base_provider="openai",
+                    best_provider=RetryProvider([Liaobots]),
+                ),
+                messages=[
+                    {
+                        "role": "system",
+                        "content":"You are a english to chinese translator",
+                    },
+                    {
+                        "role": "user",
+                        "content": f'Please translate this text:["Nice to meet you, kangkang. \n Nice to meet you, too."] into (Chinese), and keep the original text format',
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "很高兴见到你，康康。\n 我也很高兴见到你。"
+                    },
+                    {
+                        "role": "user",
+                        "content": f'Please translate this text:[{text}] into (Chinese), and keep the original text format'
+                    }
+                ],
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            raise Exception("Failed to translate, error: " + str(e)) from e
+
 
 
 if __name__ == "__main__":
