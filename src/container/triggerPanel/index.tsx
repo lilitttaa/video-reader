@@ -1,9 +1,12 @@
 import {
+	Autocomplete,
   Button,
   Card,
   CardContent,
   CircularProgress,
+  IconButton,
   Switch,
+  TextField,
   Typography
 } from '@mui/material'
 import { LocalizationProvider, StaticTimePicker } from '@mui/x-date-pickers'
@@ -12,6 +15,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { useEffect, useState } from 'react'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { getBackendUrl } from '../../api'
+import { ArrowUpward, Input, Search } from '@mui/icons-material'
 const TriggerPanel = () => {
   const [isRunning, setIsRunning] = useState(false)
   const fetchTriggerStatus = () => {
@@ -28,6 +32,21 @@ const TriggerPanel = () => {
     }, 5000)
     return () => clearInterval(interval)
   }, [])
+
+  const [isLoading, setIsLoading] = useState(false)
+  const fetchWorkers = () =>{
+	setIsLoading(true)
+	// 使用timer模拟请求
+	setTimeout(() => {
+		setIsLoading(false)
+	}, 1000)
+
+	// fetch(getBackendUrl()+'/api/trigger/workers')
+	// .then(response => response.json())
+	// .then(data => {
+	// 	setIsLoading(false)
+	// })
+  }
 
   const triggerValidation = async() => {
     fetch(getBackendUrl()+'/api/trigger/launch', {
@@ -57,41 +76,20 @@ const TriggerPanel = () => {
           borderRadius: '2rem'
         }}
       >
-        <CardContent>
-          <div className='flex flex-row gap-4'>
-            <div className='h-full'>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <StaticTimePicker
-                  defaultValue={dayjs('2022-04-17T15:30')}
-                  localeText={{ toolbarTitle: '设置定时器' }}
-                  ampm={false}
-                  displayStaticWrapperAs='desktop'
-                  
-                />
-              </LocalizationProvider>
-              <div className='flex flex-row justify-between'>
-                <Typography>启用定时器</Typography>
-                <Switch />
-              </div>
-            </div>
-            <div className='flex flex-col items-center justify-around gap-4'>
-              <Typography variant='h5' component='div'>
-                {'当前校验器状态：' + (isRunning ? '运行中' : '空闲')}
-              </Typography>
-              {isRunning ? (
+        <CardContent className='w-150'>
+          <div className='flex flex-col gap-4 justify-center'>
+			<div className='flex flex-row items-center justify-center gap-2 '>
+			<TextField label='YOUTUBE URL:' />
+			<Button disabled={isLoading} onClick={fetchWorkers}>
+				{/* <ArrowUpward /> */}
+				Upload
+			</Button>
+			{isLoading ? (
                 <CircularProgress disableShrink />
               ) : (
                 <CheckCircleIcon color='success' fontSize='large' />
               )}
-              <Button
-                disabled={isRunning}
-                onClick={() => {
-                  triggerValidation()
-                }}
-              >
-                开始校验
-              </Button>
-            </div>
+			</div>
           </div>
         </CardContent>
       </Card>
