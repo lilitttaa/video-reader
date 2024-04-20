@@ -30,5 +30,5 @@ class YoutubeScrapy:
                 if 'ytInitialPlayerResponse' in all_scripts[i].string:
                     match = re.findall("shortDescription\":\"(.*?)\",\"",all_scripts[i].string,)[0]
                     return match.replace("\\\"", "\"")
-            except :
-                pass
+            except Exception as e:
+                print("Error in get_description",e)

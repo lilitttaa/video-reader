@@ -9,7 +9,7 @@ import subprocess
 import threading
 import time
 import traceback
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Optional
 import uuid
 from flask import Flask, request
 from flask_cors import CORS
@@ -17,7 +17,12 @@ import jwt
 from g4f.models import Model, RetryProvider, Liaobots
 from g4f.client import Client
 from .youtube_crapy import YoutubeScrapy
-from .database import ValidationDatabaseWrapper, ValidationInfo
+from .database import (
+    ValidationDatabaseWrapper,
+    ValidationInfo,
+    VideoInfoDatabaseWrapper,
+    VideoInfo,
+)
 from .svn import SVNClient, SVNCommitInfo
 
 app = Flask(__name__)
@@ -53,6 +58,7 @@ user_edit_model = rest_api.model(
         "email": fields.String(required=True, min_length=4, max_length=64),
     },
 )
+
 
 class User:
     def __init__(self, username: str, email: str):
@@ -218,7 +224,6 @@ def error_code_2_status(errorCode: int) -> str:
         return "failed"
 
 
-
 class ValidationErrorInfo:
     def __init__(self, asset_path: str, error_message: str):
         self.asset_path = asset_path
@@ -259,6 +264,7 @@ class Trigger(Resource):
     # @token_required
     def post(self):
         pass
+
 
 @rest_api.route("/api/records/recent")
 class RecentRecords(Resource):
@@ -320,27 +326,41 @@ def default_error_handler(e):
 from bs4 import BeautifulSoup
 import requests
 
-@rest_api.route("/api/video/info")
-class VideoInfo(Resource):
+@rest_api.route("/api/trigger/video")
+class Trigger(Resource):
     def post(self):
         try:
             req_data = request.get_json()
             url = req_data.get("url")
-            youtube = YoutubeScrapy(url)
-            title = youtube.get_title()
-            description = youtube.get_description()
-            zh_title = TranslatorEN2ZH().translate(title)
-            zh_description = TranslatorEN2ZH().translate(description)
-            return {"title": title, "description": description,"zh_title":zh_title,"zh_description":zh_description}, 200
+            global_queue.push_task(url)
+            task_state = global_queue.get_task_state()
+            return {"success": True, "task_state": task_state}, 200
         except Exception as e:
             return {"error": str(e)}, 500
-    
+
+@rest_api.route("/api/trigger/task_state")
+class TaskState(Resource):
+    def get(self):
+        task_state = global_queue.get_task_state()
+        return {"task_state": task_state}, 200
+
+@rest_api.route("/api/video/info")
+class VideoInfo(Resource):
+    def get(self):
+        video_infos = global_database.get_all_video_infos()
+        video_infos_obj = []
+        for video_info in video_infos:
+            video_infos_obj.append(
+                video_info.to_dict()
+            )
+        return {"video_infos": video_infos_obj}, 200
 
 class TranslatorEN2ZH:
     def __init__(self) -> None:
         self._client = Client()
 
     def translate(self, text: str) -> str:
+        app.logger.info('translate:'+text)
         try:
             response = self._client.chat.completions.create(
                 model=Model(
@@ -351,7 +371,7 @@ class TranslatorEN2ZH:
                 messages=[
                     {
                         "role": "system",
-                        "content":"You are a english to chinese translator",
+                        "content": "You are a english to chinese translator",
                     },
                     {
                         "role": "user",
@@ -359,12 +379,12 @@ class TranslatorEN2ZH:
                     },
                     {
                         "role": "assistant",
-                        "content": "很高兴见到你，康康。\n 我也很高兴见到你。"
+                        "content": "很高兴见到你，康康。\n 我也很高兴见到你。",
                     },
                     {
                         "role": "user",
-                        "content": f'Please translate this text:[{text}] into (Chinese), and keep the original text format'
-                    }
+                        "content": f"Please translate this text:[{text}] into (Chinese), and keep the original text format",
+                    },
                 ],
             )
             return response.choices[0].message.content
@@ -372,7 +392,103 @@ class TranslatorEN2ZH:
             raise Exception("Failed to translate, error: " + str(e)) from e
 
 
+global_database = VideoInfoDatabaseWrapper("video.db")  # TODO
+
+
+class VideoInfoGenerator:
+    def __init__(self, url: str):
+        self._translator = TranslatorEN2ZH()
+        self._url = url
+
+    async def generate(self) -> None:
+        print("generate")
+        youtube = YoutubeScrapy(self._url)
+        title = youtube.get_title()
+        app.logger.info(f"title: {title}")
+        description = youtube.get_description()
+        app.logger.info(f"description: {description}")
+        title_zh = self._translator.translate(title)
+        description_zh = self._translator.translate(description)
+        global_database.add_video_info(
+            VideoInfo(
+                id=uuid.uuid4().hex,
+                url = self._url,
+                title=title,
+                description=description,
+                title_zh=title_zh,
+                description_zh=description_zh,
+            )
+        )
+
+
+
+class VideoInfoGenerateWorker(threading.Thread):
+    def __init__(self, url:string, on_worker_finished:Optional[Callable]):
+        threading.Thread.__init__(self)
+        self._video_info_generator = VideoInfoGenerator(url)
+        self.is_running = False
+        self._on_worker_finished = on_worker_finished
+
+    def run(self):
+        app.logger.info("run worker")
+        if self.is_running:
+            return
+        self.is_running = True
+        self.run_internal()
+        self.is_running = False
+        if self._on_worker_finished:
+            self._on_worker_finished()
+
+    def run_internal(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            print("start generate")
+            loop.run_until_complete(self._video_info_generator.generate())
+        except Exception as e:
+            tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            app.logger.info(tb_str)
+        finally:
+            loop.close()
+
+class TaskItem:
+    def __init__(self,url:str) -> None:
+        self.url = url
+        
+class TaskQueue:
+    def __init__(self) -> None:
+        self._tasks:List[TaskItem]= []
+        self._running_worker:VideoInfoGenerateWorker = None
+        self._running_task:TaskItem = None
+        
+    def push_task(self,url:str):
+        task_item = TaskItem(url)
+        if self._running_task==None and len(self._tasks) == 0:
+            self._run_task(task_item)
+        else:
+            self._tasks.append(task_item)
+            
+    def _run_task(self, task_item:TaskItem):
+        app.logger.info(f"run task: {task_item.url}")
+        self._running_task = task_item
+        self._running_worker = VideoInfoGenerateWorker(task_item.url,lambda:self._next_task())
+        self._running_worker.start()
+        
+    def _next_task(self):
+        self._running_task = None
+        if len(self._tasks) > 0:
+            next_task = self._tasks.pop(0)
+            self._run_task(next_task)
+        
+    
+    def get_task_state(self) -> Dict[str,any]:
+        return {
+            'running_task':self._running_task.url if self._running_task else None,
+            'tasks':[task.url for task in self._tasks]
+        }
+   
+global_queue = TaskQueue()          
 
 if __name__ == "__main__":
     app.run()
-

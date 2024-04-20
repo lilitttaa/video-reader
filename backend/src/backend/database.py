@@ -19,6 +19,25 @@ class ValidationInfo(Base):
     error_info = Column(String)
 
 
+class VideoInfo(Base):
+    __tablename__ = "video_info"
+    id = Column(String, primary_key=True)
+    url = Column(String)
+    title = Column(String)
+    title_zh= Column(String)
+    description = Column(String)
+    description_zh = Column(String)
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "url": self.url,
+            "title": self.title,
+            "title_zh": self.title_zh,
+            "description": self.description,
+            "description_zh": self.description_zh,
+        }
+
 class ValidationDatabaseWrapper:
     def __init__(self, db_path):
         self.engine = create_engine(
@@ -46,3 +65,26 @@ class ValidationDatabaseWrapper:
         if not inspect(self.engine).has_table("validation_info"):
             return []
         return self.session.query(ValidationInfo).order_by(desc(ValidationInfo.start_time)).all()
+    
+class VideoInfoDatabaseWrapper:
+    def __init__(self, db_path):
+        self.engine = create_engine(
+            f"sqlite:///{db_path}?check_same_thread=False", echo=True
+        )
+        self._get_or_create_database(db_path)
+        self.Session = sessionmaker()
+        self.Session.configure(bind=self.engine)
+        self.session = self.Session()
+
+    def _get_or_create_database(self, db_path):
+        if not os.path.exists(db_path):
+            Base.metadata.create_all(self.engine, checkfirst=True)
+
+    def add_video_info(self, video_info:VideoInfo):
+        self.session.add(video_info)
+        self.session.commit()
+
+    def get_all_video_infos(self)->List[VideoInfo]:
+        if not inspect(self.engine).has_table("video_info"):
+            return []
+        return self.session.query(VideoInfo).order_by(desc(VideoInfo.title)).all()
