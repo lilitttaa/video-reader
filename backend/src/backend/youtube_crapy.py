@@ -35,8 +35,17 @@ class YoutubeScrapy:
             except Exception as e:
                 print("Error in get_description",e)
 
+    def _retrival_video_id_from_url(self,url:str)->str:
+        try:
+            video_id = re.findall(r'v=(\w+)',url)[0]
+            return video_id
+        except Exception as e:
+            print("Error in _retrival_video_id_from_url",e)
+            return None
+        
+    
     def get_transcript(self)->List[dict]:
-        video_id = '4bIATTQHooM'
+        video_id = self._retrival_video_id_from_url(self._url)
         try:
             transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
             
