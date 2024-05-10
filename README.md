@@ -1,5 +1,5 @@
 <div align="center">
-<h1>Validation Board</h1>
+<h1>Youtube Reader</h1>
 
 </div>
 
