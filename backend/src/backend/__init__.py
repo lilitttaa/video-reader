@@ -326,6 +326,7 @@ def default_error_handler(e):
 from bs4 import BeautifulSoup
 import requests
 
+
 @rest_api.route("/api/trigger/video")
 class Trigger(Resource):
     def post(self):
@@ -338,13 +339,15 @@ class Trigger(Resource):
         except Exception as e:
             return {"error": str(e)}, 500
 
+
 @rest_api.route("/api/trigger/task_state")
 class TaskState(Resource):
     def get(self):
         task_state = global_queue.get_task_state()
         return {"task_state": task_state}, 200
 
-def video_info_to_dict(video_info:VideoInfo):
+
+def video_info_to_dict(video_info: VideoInfo):
     return {
         "id": video_info.id,
         "url": video_info.url,
@@ -354,23 +357,23 @@ def video_info_to_dict(video_info:VideoInfo):
         "description_zh": video_info.description_zh,
     }
 
+
 @rest_api.route("/api/video/info")
 class VideoInfoAPI(Resource):
     def get(self):
         video_infos = global_database.get_all_video_infos()
         video_infos_obj = []
         for video_info in video_infos:
-            video_infos_obj.append(
-                video_info_to_dict(video_info)
-            )
+            video_infos_obj.append(video_info_to_dict(video_info))
         return {"video_infos": video_infos_obj}, 200
+
 
 class TranslatorEN2ZH:
     def __init__(self) -> None:
         self._client = Client()
 
     def translate(self, text: str) -> str:
-        app.logger.info('translate:'+text)
+        app.logger.info("translate:" + text)
         try:
             response = self._client.chat.completions.create(
                 model=Model(
@@ -411,7 +414,7 @@ class VideoInfoGenerator:
         self._url = url
 
     async def generate(self) -> None:
-        print("generate",self._url)
+        print("generate", self._url)
         youtube = YoutubeScrapy(self._url)
         title = youtube.get_title()
         app.logger.info(f"title: {title}")
@@ -422,7 +425,7 @@ class VideoInfoGenerator:
         global_database.add_video_info(
             VideoInfo(
                 id=uuid.uuid4().hex,
-                url = self._url,
+                url=self._url,
                 title=title,
                 description=description,
                 title_zh=title_zh,
@@ -431,9 +434,8 @@ class VideoInfoGenerator:
         )
 
 
-
 class VideoInfoGenerateWorker(threading.Thread):
-    def __init__(self, url:string, on_worker_finished:Optional[Callable]):
+    def __init__(self, url: string, on_worker_finished: Optional[Callable]):
         threading.Thread.__init__(self)
         self._video_info_generator = VideoInfoGenerator(url)
         self.is_running = False
@@ -462,43 +464,47 @@ class VideoInfoGenerateWorker(threading.Thread):
         finally:
             loop.close()
 
+
 class TaskItem:
-    def __init__(self,url:str) -> None:
+    def __init__(self, url: str) -> None:
         self.url = url
-        
+
+
 class TaskQueue:
     def __init__(self) -> None:
-        self._tasks:List[TaskItem]= []
-        self._running_worker:VideoInfoGenerateWorker = None
-        self._running_task:TaskItem = None
-        
-    def push_task(self,url:str):
+        self._tasks: List[TaskItem] = []
+        self._running_worker: VideoInfoGenerateWorker = None
+        self._running_task: TaskItem = None
+
+    def push_task(self, url: str):
         task_item = TaskItem(url)
-        if self._running_task==None and len(self._tasks) == 0:
+        if self._running_task == None and len(self._tasks) == 0:
             self._run_task(task_item)
         else:
             self._tasks.append(task_item)
-            
-    def _run_task(self, task_item:TaskItem):
+
+    def _run_task(self, task_item: TaskItem):
         app.logger.info(f"run task: {task_item.url}")
         self._running_task = task_item
-        self._running_worker = VideoInfoGenerateWorker(task_item.url,lambda:self._next_task())
+        self._running_worker = VideoInfoGenerateWorker(
+            task_item.url, lambda: self._next_task()
+        )
         self._running_worker.start()
-        
+
     def _next_task(self):
         self._running_task = None
         if len(self._tasks) > 0:
             next_task = self._tasks.pop(0)
             self._run_task(next_task)
-        
-    
-    def get_task_state(self) -> Dict[str,any]:
+
+    def get_task_state(self) -> Dict[str, any]:
         return {
-            'running_task':self._running_task.url if self._running_task else None,
-            'tasks':[task.url for task in self._tasks]
+            "running_task": self._running_task.url if self._running_task else None,
+            "tasks": [task.url for task in self._tasks],
         }
-   
-global_queue = TaskQueue()          
+
+
+global_queue = TaskQueue()
 
 if __name__ == "__main__":
     app.run()
