@@ -1,6 +1,7 @@
 import re
 from bs4 import BeautifulSoup
 import requests
+from youtube_transcript_api import YouTubeTranscriptApi
 
 
 class YoutubeScrapy:
@@ -32,3 +33,16 @@ class YoutubeScrapy:
                     return match.replace("\\\"", "\"")
             except Exception as e:
                 print("Error in get_description",e)
+
+    def get_transcript(self)->str:
+        video_id = '4bIATTQHooM'
+        try:
+            transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+            
+            return transcript_list
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return None
+    
+    
+    

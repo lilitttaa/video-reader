@@ -14,3 +14,4 @@ PyJWT==2.6.0
 SQLAlchemy==2.0.29
 beautifulsoup4==4.12.3
 g4f==0.3.0.1
+youtube-transcript-api==0.6.2
