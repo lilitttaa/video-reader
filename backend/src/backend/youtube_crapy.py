@@ -1,4 +1,5 @@
 import re
+from typing import List
 from bs4 import BeautifulSoup
 import requests
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -34,7 +35,7 @@ class YoutubeScrapy:
             except Exception as e:
                 print("Error in get_description",e)
 
-    def get_transcript(self)->str:
+    def get_transcript(self)->List[dict]:
         video_id = '4bIATTQHooM'
         try:
             transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
@@ -43,6 +44,12 @@ class YoutubeScrapy:
         except Exception as e:
             print(f"An error occurred: {e}")
             return None
+        
+    def write_transcript(self,transcript:List[dict], file_path:str):
+        with open(file_path, 'w', encoding='utf-8') as f:
+            for line in transcript:
+                f.write(f"{line['text']}\n")
+        return file_path
     
     
     
