@@ -17,12 +17,18 @@ async def test_Given_english_text_When_translate_to_chinese_Then_return_chinese_
     translated_content = await translate_content(content, output_lang)
     assert translated_content is not None  # TODO check the translated content
  
-@pytest.mark.current
 def test_Given_youtube_url_When_fetch_and_write_transcript_Then_return_transcript_file():
-    url = 'https://www.youtube.com/watch?v=9bZkp7q19f0'
+    url = 'https://www.youtube.com/watch?v=iMPWx1v7ioM'
     youtube = YoutubeScrapy(url)
     transcript = youtube.get_transcript()
     file_path = 'transcript.txt'
     print('transcript:', transcript)
     youtube.write_transcript(transcript, file_path)
     assert os.path.exists(file_path)  # TODO check the file content
+    
+@pytest.mark.current
+def test_langchain_transcript_loader():
+    url = 'https://www.youtube.com/watch?v=iMPWx1v7ioM'
+    youtube = YoutubeScrapy(url)
+    transcript = youtube.get_transcript_by_langchain()
+    print("transcript:", transcript)

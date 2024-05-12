@@ -3,7 +3,7 @@ from typing import List
 from bs4 import BeautifulSoup
 import requests
 from youtube_transcript_api import YouTubeTranscriptApi
-
+from langchain_core.documents import Document
 
 class YoutubeScrapy:
     def __init__(self,url:str):
@@ -43,7 +43,6 @@ class YoutubeScrapy:
             print("Error in _retrival_video_id_from_url",e)
             return None
         
-    
     def get_transcript(self)->List[dict]:
         video_id = self._retrival_video_id_from_url(self._url)
         try:
@@ -53,6 +52,15 @@ class YoutubeScrapy:
         except Exception as e:
             print(f"An error occurred: {e}")
             return None
+
+
+    def get_transcript_by_langchain(self)->List[Document]:
+        from langchain_community.document_loaders import YoutubeLoader
+        loader = YoutubeLoader.from_youtube_url(
+            self._url, add_video_info=False
+        )
+        return loader.load()
+
         
     def write_transcript(self,transcript:List[dict], file_path:str):
         with open(file_path, 'w', encoding='utf-8') as f:
