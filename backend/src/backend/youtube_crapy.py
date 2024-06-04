@@ -114,11 +114,16 @@ def retry_request(times: int, interval: int = 1):
 
 from openai import OpenAI
 
+with open("config.json", "r") as f:
+    config = json.load(f)
+    MOONSHOT_API_KEY = config["MOONSHOT_API_KEY"]
+
+
 @retry_request(3, 3)
 def add_punctuation(content):
 
     client = OpenAI(
-        api_key="sk-4ijxrYoqKEsw82bXFWePKgF3TiXAQJBpMftl7K4QtXZu0zDW",
+        api_key=MOONSHOT_API_KEY,
         base_url="https://api.moonshot.cn/v1",
     )
 
