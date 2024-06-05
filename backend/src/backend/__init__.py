@@ -24,6 +24,7 @@ from .database import (
     VideoInfo,
 )
 from .svn import SVNClient, SVNCommitInfo
+from .config import MOONSHOT_API_KEY, WORD_SAVE_PATH
 
 app = Flask(__name__)
 CORS(app)
@@ -366,6 +367,20 @@ class VideoInfoAPI(Resource):
         for video_info in video_infos:
             video_infos_obj.append(video_info_to_dict(video_info))
         return {"video_infos": video_infos_obj}, 200
+
+words_path = WORD_SAVE_PATH + r"\word_record.jsonl"
+word_objs = []
+with open(words_path, "r", encoding="utf-8") as f:
+    words = f.readlines()
+    words = [word.strip() for word in words]
+    for word in words:
+        word_obj = json.loads(word)
+        word_objs.append(word_obj)
+
+@rest_api.route("/api/words/list")
+class GetWordsList(Resource):
+    def get(self):
+        return {"words": word_objs}, 200
 
 
 class TranslatorEN2ZH:

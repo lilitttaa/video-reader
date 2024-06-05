@@ -22,103 +22,71 @@ import { getBackendUrl } from '../../api'
 import { NavLink } from 'react-router-dom'
 import React from 'react'
 
-class VideoInfo {
-  title: string
-  description: string
-  titleZH: string
-  descriptionZH: string
-  constructor (title: string, description: string, titleZH: string, descriptionZH: string) {
-    this.title = title
-    this.description = description
-	this.titleZH = titleZH
-	this.descriptionZH = descriptionZH
+class WordInfo {
+  word: string
+  context: string
+  interpret: string
+  constructor (
+    word: string,
+    context: string,
+    interpret: string
+  ) {
+    this.word = word
+    this.context = context
+    this.interpret = interpret
   }
-}
-
-enum LanuageMode {
-  zh = 'zh',
-  en = 'en'
 }
 
 export function ChartsPanel () {
-	const [videoInfos, setVideoInfos] = useState<VideoInfo[]>([])
-  const [languageMode, setLanguageMode] = useState<LanuageMode>(LanuageMode.en)
+  const [wordInfoList, setWordInfoList] = useState<WordInfo[]>([])
 
-  const fetchVideoInfo = () => {
-    fetch(getBackendUrl() + '/api/video/info')
+  const fetchWordsList = () => {
+    console.log("fetchWordsList")
+    fetch(getBackendUrl() + '/api/words/list')
       .then(response => response.json())
       .then(data => {
-		setVideoInfos(data.video_infos.map((videoInfo: any) => {
-			return new VideoInfo(videoInfo.title, videoInfo.description, videoInfo.title_zh, videoInfo.description_zh)
-		}))})
-		.catch((error) => {
-			console.error('Error:', error);
-		  });
+        console.log(data)
+        setWordInfoList(
+          data.words.map((wordInfo: any) => {
+            return new WordInfo(
+              wordInfo.word,
+              wordInfo.context,
+              wordInfo.interpret
+            )
+          })
+        )
+      })
+      .catch(error => {
+        console.error('Error:', error)
+      })
   }
 
   useEffect(() => {
-	fetchVideoInfo()
-	const interval = setInterval(() => {
-	  fetchVideoInfo()
-	}, 5000)
-	return () => clearInterval(interval)
+    fetchWordsList()
   }, [])
 
-
-
   return (
-    <main className='main flex flex-col pl-4 pr-4 pb-4 gap-10 overflow-y-auto'>
-      <div className='pt-8 flex flex-row items-center gap-4'>
-        <Card
-          className='flex-1'
-          style={{
-            backgroundColor: '#F7F9FB',
-            borderRadius: '1.5rem'
-          }}
-          elevation={0}
-        >
-          <CardContent className='flex flex-row items-center justify-center'>
-            <Typography>查看详情:</Typography>
-            <NavLink to={'/detail'}>
-              <IconButton
-                aria-label='add an alarm'
-                onClick={() => {
-                  // generateHtmlFile()
-                }}
+    <main className='main flex flex-col p-4 gap-10 overflow-y-auto'>
+      <div>
+        <ul className='words-list w-full flex flex-col gap-2'>
+          {wordInfoList.map((wordInfo, index) => {
+            return (
+              <li
+                key={index}
+                className='words-list-item bg-slate-400 w-auto rounded-xl pl-4 pr-4 pt-1 pb-1 flex flex-col gap-1'
               >
-                <Article />
-              </IconButton>
-            </NavLink>
-          </CardContent>
-        </Card>
-      </div>
-<div className='flex flex-row items-center'>
-	<Typography variant='h5' color='textPrimary' gutterBottom>
-	English/中文
-	</Typography>
-	<Switch value={languageMode===LanuageMode.en} onChange={()=>{
-		setLanguageMode(languageMode===LanuageMode.en?LanuageMode.zh:LanuageMode.en)
-	}}></Switch>
-
-</div>
-      <div className='flex flex-row gap-5 flex-wrap justify-start'>
-        {videoInfos.map(videoInfo => (
-          <div className='w-100 p-4 h-100 bg-slate-300 overflow-y-auto'>
-            <Typography variant='h5' color='textPrimary' gutterBottom>
-              {languageMode === LanuageMode.en ? videoInfo.title : videoInfo.titleZH}
-            </Typography>
-            <Typography variant='body1' color='textPrimary' gutterBottom>
-              {(languageMode === LanuageMode.en ? videoInfo.description : videoInfo.descriptionZH).split('\\n').map((line, index) => {
-                    return (
-                      <React.Fragment key={index}>
-                        {line}
-                        <br />
-                      </React.Fragment>
-                    )
-                  })}
-            </Typography>
-          </div>
-        ))}
+                <Typography variant='h5'>
+                  {wordInfo.word}</Typography>
+                <Typography variant='body1'>
+                  <span className='font-bold'>Context:  </span>
+                  {wordInfo.context}</Typography>
+                <Typography variant='body1'>
+                  <span className='font-bold'>Interpret:  </span>
+                  {wordInfo.interpret}</Typography>
+              </li>
+            )
+          })}
+        </ul>
       </div>
     </main>
   )

@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 import requests
 from youtube_transcript_api import YouTubeTranscriptApi
 from langchain_core.documents import Document
-
+from .config import MOONSHOT_API_KEY
 class YoutubeScrapy:
     def __init__(self,url:str):
         self._url = url
@@ -114,10 +114,6 @@ def retry_request(times: int, interval: int = 1):
 
 from openai import OpenAI
 
-with open("config.json", "r") as f:
-    config = json.load(f)
-    MOONSHOT_API_KEY = config["MOONSHOT_API_KEY"]
-
 
 @retry_request(3, 3)
 def add_punctuation(content):
@@ -165,19 +161,19 @@ def concurrent_add_punctuation(contents):
         
         return [results_map[i] for i in range(len(contents))]
 
-url = input("Enter the youtube url: ")
-scrapy = YoutubeScrapy(url)
-title = scrapy.get_title()
-print(f"Title: {title}")
-description = scrapy.get_description()
-print(f"Description: {description}")
-transcript = scrapy.get_transcript()
-chunks = split_transcript_into_chunks(transcript, 4000)
+# url = input("Enter the youtube url: ")
+# scrapy = YoutubeScrapy(url)
+# title = scrapy.get_title()
+# print(f"Title: {title}")
+# description = scrapy.get_description()
+# print(f"Description: {description}")
+# transcript = scrapy.get_transcript()
+# chunks = split_transcript_into_chunks(transcript, 4000)
 
-final_text = ""
-chunks_with_punctuation = concurrent_add_punctuation(chunks)
-for chunk in chunks_with_punctuation:
-    final_text += chunk + " "
+# final_text = ""
+# chunks_with_punctuation = concurrent_add_punctuation(chunks)
+# for chunk in chunks_with_punctuation:
+#     final_text += chunk + " "
 
-write_to_jsonl(title, description, final_text)
+# write_to_jsonl(title, description, final_text)
 
