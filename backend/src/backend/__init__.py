@@ -543,21 +543,5 @@ class TaskQueue:
 
 global_queue = TaskQueue()
 
-# if __name__ == "__main__":
-#     app.run()
-
-
-# url = input("Enter the youtube url: ")
-# scrapy = YoutubeScrapy(url)
-# title = scrapy.get_title()
-# print(f"Title: {title}")
-# description = scrapy.get_description()
-# print(f"Description: {description}")
-# transcript = scrapy.get_transcript()
-# splitter = TranscriptSplitter(transcript, 4000)
-# final_text = ""
-# chunks_with_punctuation = ConcurrentPunctuationAdder().concurrent_add_punctuation(splitter.split_transcript_into_chunks())
-# for chunk in chunks_with_punctuation:
-#     final_text += chunk + " "
-
-# write_to_jsonl(title, description, final_text)
+if __name__ == "__main__":
+    app.run()
