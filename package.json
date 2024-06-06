@@ -32,7 +32,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "flask-dev": "set FLASK_DEBUG=1 && pip install -r backend/requirements.txt && python -m flask --app backend/src/backend/__init__ run -p 8000 --reload",
+    "flask-dev": "set FLASK_DEBUG=1 && pip install -r backend/requirements.txt && cd ./backend && python -m flask --app src/backend/__init__ run -p 8000 --reload",
     "react-dev": "react-scripts start",
     "electron-dev": "electron .",
     "start": "react-scripts start",
