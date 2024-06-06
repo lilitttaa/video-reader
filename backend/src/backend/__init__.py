@@ -332,12 +332,17 @@ class VideoInfoAPI(Resource):
 
 words_path = WORD_SAVE_PATH + r"\word_record.jsonl"
 word_objs = []
-with open(words_path, "r", encoding="utf-8") as f:
-    words = f.readlines()
-    words = [word.strip() for word in words]
-    for word in words:
-        word_obj = json.loads(word)
-        word_objs.append(word_obj)
+def update_word_objs():
+    word_objs.clear()
+    with open(words_path, "r", encoding="utf-8") as f:
+        words = f.readlines()
+        words = [word.strip() for word in words]
+        for word in words:
+            word_obj = json.loads(word)
+            word_objs.append(word_obj)
+
+update_word_objs() 
+
 
 transcript_path = WORD_SAVE_PATH + r"\transcript.jsonl"
 transcript_objs = []
@@ -367,17 +372,19 @@ class AddWord(Resource):
         try:
             generator = InterpretGenerator()
             interpret = generator.generate_interpret(word, context)
-            # TODO save to jsonl
+            obj = {
+                "word": word,
+                "context": context,
+                "interpret": interpret,
+            }
+            json_obj = json.dumps(obj, ensure_ascii=False)
+            with open(WORD_SAVE_PATH+r"/word_record.jsonl", "a", encoding="utf-8") as f:
+                f.write(json_obj + "\n")
         except Exception as e:
-            return {"success": False, "msg": str(e)}, 500
-        return {
-            "success": True,
-            "data": {
-            "word": word,
-            "context": context,
-            "interpret": interpret
-        }
-        }, 200
+            return {"msg": str(e)}, 500
+    
+        update_word_objs()
+        return {"words": word_objs}, 200
 
 @rest_api.route('/api/transcript/add')
 class AddTranscript(Resource):
