@@ -7,7 +7,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 from langchain_core.documents import Document
 from urllib.parse import urlparse, parse_qs
 from contextlib import suppress
-
+from .utils import retry_request
 class YoutubeScrapy:
     def __init__(self,url:str):
         self._url = url
@@ -104,23 +104,6 @@ def split_transcript_into_chunks(transcript: List[dict], max_text_count:int)->Li
             chunk += text + " "
             chunk_length += len(text)
     return chunks
-
-
-
-def retry_request(times: int, interval: int = 1):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            for i in range(times):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    print('retry request')
-                    time.sleep(interval)
-                    continue
-            raise Exception('retry request failed')
-        return wrapper
-    return decorator
-
 
 from openai import OpenAI
 
