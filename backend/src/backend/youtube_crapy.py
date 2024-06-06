@@ -5,7 +5,9 @@ from bs4 import BeautifulSoup
 import requests
 from youtube_transcript_api import YouTubeTranscriptApi
 from langchain_core.documents import Document
-from .config import MOONSHOT_API_KEY
+from urllib.parse import urlparse, parse_qs
+from contextlib import suppress
+
 class YoutubeScrapy:
     def __init__(self,url:str):
         self._url = url
@@ -37,12 +39,20 @@ class YoutubeScrapy:
                 print("Error in get_description",e)
 
     def _retrival_video_id_from_url(self,url:str)->str:
-        try:
-            video_id = re.findall(r'v=(\w+)',url)[0]
-            return video_id
-        except Exception as e:
-            print("Error in _retrival_video_id_from_url",e)
-            return None
+        # Examples:
+        # - http://youtu.be/SA2iWivDJiE
+        # - http://www.youtube.com/watch?v=_oPAwA_Udwc&feature=feedu
+        # - http://www.youtube.com/embed/SA2iWivDJiE
+        # - http://www.youtube.com/v/SA2iWivDJiE?version=3&amp;hl=en_US
+        query = urlparse(url)
+        if query.hostname == 'youtu.be': return query.path[1:]
+        if query.hostname in {'www.youtube.com', 'youtube.com', 'music.youtube.com'}:
+            with suppress(KeyError):
+                return parse_qs(query.query)['list'][0]
+            if query.path == '/watch': return parse_qs(query.query)['v'][0]
+            if query.path[:7] == '/watch/': return query.path.split('/')[2]
+            if query.path[:7] == '/embed/': return query.path.split('/')[2]
+            if query.path[:3] == '/v/': return query.path.split('/')[2]
         
     def get_transcript(self)->List[dict]:
         video_id = self._retrival_video_id_from_url(self._url)
