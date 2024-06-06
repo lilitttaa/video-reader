@@ -7,7 +7,7 @@ import {
   useLocation
 } from 'react-router-dom'
 import DefaultLayout from '../layout/defaultLayout'
-import { ChartsPanel } from '../container/chartsPanel'
+import { WordsPanel } from '../container/chartsPanel'
 import TriggerPanel from '../container/triggerPanel'
 import { GuestGuard, Login } from '../component/login'
 import HistoryPanel from '../container/historyPanel'
@@ -20,12 +20,12 @@ const App: React.FC = () => {
       <BrowserRouter>
         <Routes>
           <Route element={<DefaultLayout />}>
-            <Route path='/' element={<ChartsPanel />} />
-            <Route path='/charts' element={<Navigate to='/' />} />
+            <Route path='/' element={<WordsPanel />} />
+            <Route path='/word' element={<Navigate to='/' />} />
+            <Route path='/transcript' element={<TranscriptPanel/>}/>
             <Route path='/login' element={<Login />} />
             <Route path='/sign_up' element={<SignUp />} />
             <Route path='/history' element={<HistoryPanel />} />
-            <Route path='/transcript' element={<TranscriptPanel/>}/>
             <Route
               path='/trigger'
               element={

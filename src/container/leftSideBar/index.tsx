@@ -47,9 +47,9 @@ export function LeftSideBar () {
       title: 'MENU',
       children: [
         {
-          title: 'Charts',
-          link: '/charts',
-          keyword: 'charts',
+          title: 'Word',
+          link: '/word',
+          keyword: 'word',
           icon: <BarChart />
         },
         {

@@ -37,7 +37,7 @@ class WordInfo {
   }
 }
 
-export function ChartsPanel () {
+export function WordsPanel () {
   const [wordInfoList, setWordInfoList] = useState<WordInfo[]>([])
 
   const fetchWordsList = () => {
