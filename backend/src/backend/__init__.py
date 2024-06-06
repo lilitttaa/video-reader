@@ -16,7 +16,7 @@ from flask_cors import CORS
 import jwt
 from g4f.models import Model, RetryProvider, Liaobots
 from g4f.client import Client
-from .youtube_crapy import YoutubeScrapy
+from .youtube_crapy import YoutubeScrapy,TranscriptSplitter,ConcurrentPunctuationAdder,write_to_jsonl
 from .database import (
     ValidationDatabaseWrapper,
     ValidationInfo,
@@ -25,6 +25,7 @@ from .database import (
 )
 from .svn import SVNClient, SVNCommitInfo
 from .config import MOONSHOT_API_KEY, WORD_SAVE_PATH
+from .word import InterpretGenerator
 
 app = Flask(__name__)
 CORS(app)
@@ -357,6 +358,28 @@ class GetTranscriptList(Resource):
     def get(self):
         return {"transcripts": transcript_objs}, 200
 
+@rest_api.route('/api/words/add')
+class AddWord(Resource):
+    def post(self):
+        req_data = request.get_json()
+        word = req_data.get("word")
+        context = req_data.get("context")
+        try:
+            generator = InterpretGenerator()
+            interpret = generator.generate_interpret(word, context)
+        except Exception as e:
+            return {"success": False, "msg": str(e)}, 500
+        return {
+            "success": True,
+            "data": {
+            "word": word,
+            "context": context,
+            "interpret": interpret
+        }
+        }, 200
+
+
+
 class TranslatorEN2ZH:
     def __init__(self) -> None:
         self._client = Client()
@@ -495,5 +518,21 @@ class TaskQueue:
 
 global_queue = TaskQueue()
 
-if __name__ == "__main__":
-    app.run()
+# if __name__ == "__main__":
+#     app.run()
+
+
+# url = input("Enter the youtube url: ")
+# scrapy = YoutubeScrapy(url)
+# title = scrapy.get_title()
+# print(f"Title: {title}")
+# description = scrapy.get_description()
+# print(f"Description: {description}")
+# transcript = scrapy.get_transcript()
+# splitter = TranscriptSplitter(transcript, 4000)
+# final_text = ""
+# chunks_with_punctuation = ConcurrentPunctuationAdder().concurrent_add_punctuation(splitter.split_transcript_into_chunks())
+# for chunk in chunks_with_punctuation:
+#     final_text += chunk + " "
+
+# write_to_jsonl(title, description, final_text)
