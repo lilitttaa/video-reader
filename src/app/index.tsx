@@ -12,7 +12,7 @@ import TriggerPanel from '../container/triggerPanel'
 import { GuestGuard, Login } from '../component/login'
 import HistoryPanel from '../container/historyPanel'
 import { SignUp } from '../component/signUp'
-import { DetailPanel } from '../container/detailPanel'
+import { TranscriptPanel } from '../container/transcriptPanel'
 
 const App: React.FC = () => {
   return (
@@ -25,7 +25,7 @@ const App: React.FC = () => {
             <Route path='/login' element={<Login />} />
             <Route path='/sign_up' element={<SignUp />} />
             <Route path='/history' element={<HistoryPanel />} />
-            <Route path='/transcript' element={<DetailPanel/>}/>
+            <Route path='/transcript' element={<TranscriptPanel/>}/>
             <Route
               path='/trigger'
               element={
