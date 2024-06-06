@@ -63,7 +63,13 @@ export function LeftSideBar () {
           link: '/history',
           keyword: 'history',
           icon: <History />
-        }
+        },
+        {
+          title: 'Transcript',
+          link: '/transcript',
+          keyword: 'transcript',
+          icon: <History />
+        },
       ]
     }
   ] as sidebarCategory[])

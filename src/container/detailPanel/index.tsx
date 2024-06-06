@@ -1,75 +1,74 @@
-import { Typography } from '@mui/material'
-import { getBackendUrl } from '../../api'
 import {
-  createValidationResult,
-  HeaderBlock,
-  ParagraphBlock,
-  ValidationResult
-} from '../../dataHandler'
+  Typography
+} from '@mui/material'
 import { useEffect, useState } from 'react'
+import { getBackendUrl } from '../../api'
+class TranscriptInfo {
+  title: string
+  desc: string
+  text: string
+  constructor (
+    title: string,
+    desc: string,
+    text: string
+  ) {
+    this.title = title
+    this.desc = desc
+    this.text = text
+  }
+}
 
-export const DetailPanel = () => {
-  const [validationResult, setValidationResult] =
-    useState<ValidationResult | null>(null)
-  const fetchRecentData = () => {
-    fetch(getBackendUrl() + '/api/records/recent')
+export function DetailPanel () {
+  const [wordInfoList, setWordInfoList] = useState<TranscriptInfo[]>([])
+
+  const fetchTranscriptsList = () => {
+    console.log("fetchTranscriptsList")
+    fetch(getBackendUrl() + '/api/transcript/list')
       .then(response => response.json())
       .then(data => {
-        setValidationResult(createValidationResult(data))
+        console.log(data)
+        setWordInfoList(
+          data.transcripts.map((transcriptInfo: any) => {
+            return new TranscriptInfo(
+              transcriptInfo.title,
+              transcriptInfo.desc,
+              transcriptInfo.text
+            )
+          })
+        )
+      })
+      .catch(error => {
+        console.error('Error:', error)
       })
   }
+
   useEffect(() => {
-    fetchRecentData()
+    fetchTranscriptsList()
   }, [])
 
   return (
-    <main className='main flex flex-col p-10 gap-10 overflow-y-auto'>
-      {validationResult &&
-        validationResult.generateBlocks().map((block, index) => {
-          if (block.type === 'header') {
-            let headerBlock = block as HeaderBlock
-            if (headerBlock.level === 1) {
-              return (
-                <Typography variant='h3' component='div'>
-                  {(block as HeaderBlock).text}
-                </Typography>
-              )
-            } else if (headerBlock.level === 2) {
-              return (
-                <Typography variant='h4' component='div'>
-                  {(block as HeaderBlock).text}
-                </Typography>
-              )
-            } else if (headerBlock.level === 3) {
-              return (
-                <Typography variant='h5' component='div'>
-                  {(block as HeaderBlock).text}
-                </Typography>
-              )
-            } else if (headerBlock.level === 4) {
-              return (
-                <Typography variant='h6' component='div'>
-                  {(block as HeaderBlock).text}
-                </Typography>
-              )
-            }
-          } else {
-            let paragraphBlock = block as ParagraphBlock
-            if (paragraphBlock.isStrong) {
-              return (
-                <Typography variant='body1' component='div'>
-                  <strong>{(block as ParagraphBlock).text}</strong>
-                </Typography>
-              )
-            } else {
-              return (
-                <Typography variant='body1' component='div'>
-                  {(block as ParagraphBlock).text}
-                </Typography>
-              )
-            }
-          }
-        })}
+    <main className='main flex flex-col p-4 gap-10 overflow-y-auto'>
+      <div>
+        <ul className='words-list w-full flex flex-col gap-2'>
+          {wordInfoList.map((wordInfo, index) => {
+            return (
+              <li
+                key={index}
+                className='words-list-item bg-slate-400 w-auto rounded-xl pl-4 pr-4 pt-1 pb-1 flex flex-col gap-1'
+              >
+                <Typography variant='h5'>
+                  {wordInfo.title}</Typography>
+                <Typography variant='body1'>
+                  <span className='font-bold'>Context:  </span>
+                  {wordInfo.desc}</Typography>
+                <Typography variant='body1'>
+                  <span className='font-bold'>Interpret:  </span>
+                  {wordInfo.text}</Typography>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
     </main>
   )
 }

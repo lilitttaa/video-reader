@@ -25,7 +25,7 @@ const App: React.FC = () => {
             <Route path='/login' element={<Login />} />
             <Route path='/sign_up' element={<SignUp />} />
             <Route path='/history' element={<HistoryPanel />} />
-            <Route path='/detail' element={<DetailPanel/>}/>
+            <Route path='/transcript' element={<DetailPanel/>}/>
             <Route
               path='/trigger'
               element={

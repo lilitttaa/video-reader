@@ -267,45 +267,6 @@ class Trigger(Resource):
         pass
 
 
-@rest_api.route("/api/records/recent")
-class RecentRecords(Resource):
-    def get(self):
-        recent_records = gDatabase.get_recent_records()
-
-        records = []
-        for record in recent_records:
-            records.append(
-                {
-                    "id": record.id,
-                    "start_time": record.start_time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "duration": record.duration,
-                    "status": record.status,
-                    "statistic_info": json.loads(record.statistic_info),
-                    "error_infos": json.loads(record.error_info),
-                }
-            )
-        return {"records": records}, 200
-
-
-@rest_api.route("/api/records/all")
-class RecentRecords(Resource):
-    def get(self):
-        recent_records = gDatabase.get_all_records()
-
-        records = []
-        for record in recent_records:
-            records.append(
-                {
-                    "id": record.id,
-                    "start_time": record.start_time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "duration": record.duration,
-                    "status": record.status,
-                    "statistic_info": json.loads(record.statistic_info),
-                    "error_infos": json.loads(record.error_info),
-                }
-            )
-        return {"records": records}, 200
-
 
 @rest_api.route("/api/test")
 class Test(Resource):
@@ -377,11 +338,24 @@ with open(words_path, "r", encoding="utf-8") as f:
         word_obj = json.loads(word)
         word_objs.append(word_obj)
 
+transcript_path = WORD_SAVE_PATH + r"\transcript.jsonl"
+transcript_objs = []
+with open(transcript_path, "r", encoding="utf-8") as f:
+    transcripts = f.readlines()
+    transcripts = [transcript.strip() for transcript in transcripts]
+    for transcript in transcripts:
+        transcript_obj = json.loads(transcript)
+        transcript_objs.append(transcript_obj)
+
 @rest_api.route("/api/words/list")
 class GetWordsList(Resource):
     def get(self):
         return {"words": word_objs}, 200
 
+@rest_api.route("/api/transcript/list")
+class GetTranscriptList(Resource):
+    def get(self):
+        return {"transcripts": transcript_objs}, 200
 
 class TranslatorEN2ZH:
     def __init__(self) -> None:
