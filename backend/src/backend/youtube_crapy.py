@@ -10,7 +10,7 @@ from contextlib import suppress
 from .utils import retry_request
 from openai import OpenAI
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
+from .config import MOONSHOT_API_KEY, WORD_SAVE_PATH
 
 class YoutubeScrapy:
     def __init__(self, url: str):
@@ -88,92 +88,78 @@ class YoutubeScrapy:
         return file_path
 
 
+class ConcurrentPunctuationAdder:
+    def __init__(self):
+        pass
+
+    @retry_request(3, 3)
+    def _add_punctuation(self, content:str):
+        client = OpenAI(
+            api_key=MOONSHOT_API_KEY,
+            base_url="https://api.moonshot.cn/v1",
+        )
+
+        completion = client.chat.completions.create(
+            model="moonshot-v1-8k",
+            messages=[
+                {
+                    "role": "user",
+                    "content": "".join(
+                        ["Add appropriate punctuation to the following:", content]
+                    ),
+                }
+            ],
+            temperature=0.3,
+        )
+        return completion.choices[0].message.content
+
+    def concurrent_add_punctuation(self,contents: List[str]):
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            future_to_content = {
+                executor.submit(self._add_punctuation, content): i
+                for i, content in enumerate(contents)
+            }
+
+            results_map = {}
+            for future in as_completed(future_to_content):
+                idx = future_to_content[future]
+                try:
+                    # 获取future的结果
+                    result = future.result()
+                    print(f"idx: {idx}")
+                except Exception as exc:
+                    print(f"generated an exception: {exc}")
+                else:
+                    results_map[idx] = result
+
+            return [results_map[i] for i in range(len(contents))]
+
 def write_to_jsonl(title: str, desc: str, text: str):
     obj = {
         "title": title,
         "desc": desc,
         "text": text,
     }
-    json_obj = json.dumps(obj, ensure_ascii=False, indent=4)
-    with open("transcript.jsonl", "a", encoding="utf-8") as f:
+    json_obj = json.dumps(obj, ensure_ascii=False)
+    with open(WORD_SAVE_PATH+r"/transcript.jsonl", "a", encoding="utf-8") as f:
         f.write(json_obj + "\n")
 
+class TranscriptSplitter:
+    def __init__(self, transcript: List[dict], max_text_count: int):
+        self._transcript = transcript
+        self._max_text_count = max_text_count
 
-def split_transcript_into_chunks(
-    transcript: List[dict], max_text_count: int
-) -> List[str]:
-    chunks = []
-    chunk = ""
-    chunk_length = 0
-    for idx, line in enumerate(transcript):
-        text = line["text"]
-        if chunk_length + len(text) > max_text_count or idx == len(transcript) - 1:
-            chunks.append(chunk)
-            chunk = text + " "
-            chunk_length = len(text)
-        else:
-            chunk += text + " "
-            chunk_length += len(text)
-    return chunks
-
-
-@retry_request(3, 3)
-def add_punctuation(content):
-
-    client = OpenAI(
-        api_key=MOONSHOT_API_KEY,
-        base_url="https://api.moonshot.cn/v1",
-    )
-
-    completion = client.chat.completions.create(
-        model="moonshot-v1-8k",
-        messages=[
-            {
-                "role": "user",
-                "content": "".join(
-                    ["Add appropriate punctuation to the following:", content]
-                ),
-            }
-        ],
-        temperature=0.3,
-    )
-    return completion.choices[0].message.content
-
-
-def concurrent_add_punctuation(contents):
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        future_to_content = {
-            executor.submit(add_punctuation, content): i
-            for i, content in enumerate(contents)
-        }
-
-        results_map = {}
-        for future in as_completed(future_to_content):
-            idx = future_to_content[future]
-            try:
-                # 获取future的结果
-                result = future.result()
-                print(f"idx: {idx}")
-            except Exception as exc:
-                print(f"generated an exception: {exc}")
+    def split_transcript_into_chunks(self) -> List[str]:
+        chunks = []
+        chunk = ""
+        chunk_length = 0
+        for idx, line in enumerate(self._transcript):
+            text = line["text"]
+            if chunk_length + len(text) > self._max_text_count or idx == len(self._transcript) - 1:
+                chunks.append(chunk)
+                chunk = text + " "
+                chunk_length = len(text)
             else:
-                results_map[idx] = result
-
-        return [results_map[i] for i in range(len(contents))]
-
-
-# url = input("Enter the youtube url: ")
-# scrapy = YoutubeScrapy(url)
-# title = scrapy.get_title()
-# print(f"Title: {title}")
-# description = scrapy.get_description()
-# print(f"Description: {description}")
-# transcript = scrapy.get_transcript()
-# chunks = split_transcript_into_chunks(transcript, 4000)
-
-# final_text = ""
-# chunks_with_punctuation = concurrent_add_punctuation(chunks)
-# for chunk in chunks_with_punctuation:
-#     final_text += chunk + " "
-
-# write_to_jsonl(title, description, final_text)
+                chunk += text + " "
+                chunk_length += len(text)
+        return chunks
