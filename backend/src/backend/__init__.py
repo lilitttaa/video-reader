@@ -367,6 +367,7 @@ class AddWord(Resource):
         try:
             generator = InterpretGenerator()
             interpret = generator.generate_interpret(word, context)
+            # TODO save to jsonl
         except Exception as e:
             return {"success": False, "msg": str(e)}, 500
         return {
@@ -378,7 +379,31 @@ class AddWord(Resource):
         }
         }, 200
 
-
+@rest_api.route('/api/transcript/add')
+class AddTranscript(Resource):
+    def post(self):
+        req_data = request.get_json()
+        url = req_data.get("url")
+        try:
+            scarpy = YoutubeScrapy(url)
+            title = scarpy.get_title()
+            description = scarpy.get_description()
+            transcript = scarpy.get_transcript()
+            splitter = TranscriptSplitter(transcript, 4000)
+            final_text = ""
+            chunks_with_punctuation = ConcurrentPunctuationAdder().concurrent_add_punctuation(splitter.split_transcript_into_chunks())
+            for chunk in chunks_with_punctuation:
+                final_text += chunk + " "
+            # write_to_jsonl(title, description, final_text)
+        except Exception as e:
+            return {"success": False, "msg": str(e)}, 500
+        return {
+                "success": True,
+                "data": {
+                "title": title,
+                "description": description
+            }   
+        }, 200
 
 class TranslatorEN2ZH:
     def __init__(self) -> None:
