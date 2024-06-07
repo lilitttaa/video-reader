@@ -346,12 +346,16 @@ update_word_objs()
 
 transcript_path = WORD_SAVE_PATH + r"\transcript.jsonl"
 transcript_objs = []
-with open(transcript_path, "r", encoding="utf-8") as f:
-    transcripts = f.readlines()
-    transcripts = [transcript.strip() for transcript in transcripts]
-    for transcript in transcripts:
-        transcript_obj = json.loads(transcript)
-        transcript_objs.append(transcript_obj)
+def update_transcript_objs():
+    transcript_objs.clear()
+    with open(transcript_path, "r", encoding="utf-8") as f:
+        transcripts = f.readlines()
+        transcripts = [transcript.strip() for transcript in transcripts]
+        for transcript in transcripts:
+            transcript_obj = json.loads(transcript)
+            transcript_objs.append(transcript_obj)
+
+
 
 @rest_api.route("/api/words/list")
 class GetWordsList(Resource):
@@ -401,16 +405,14 @@ class AddTranscript(Resource):
             chunks_with_punctuation = ConcurrentPunctuationAdder().concurrent_add_punctuation(splitter.split_transcript_into_chunks())
             for chunk in chunks_with_punctuation:
                 final_text += chunk + " "
-            # write_to_jsonl(title, description, final_text)
+            write_to_jsonl(title, description, final_text)
         except Exception as e:
-            return {"success": False, "msg": str(e)}, 500
+            return {"msg": str(e)}, 500
+        
+        update_transcript_objs()
         return {
-                "success": True,
-                "data": {
-                "title": title,
-                "description": description
-            }   
-        }, 200
+            "transcripts":transcript_objs
+            }, 200
 
 class TranslatorEN2ZH:
     def __init__(self) -> None:
