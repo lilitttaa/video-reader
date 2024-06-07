@@ -341,7 +341,7 @@ def update_word_objs():
             word_obj = json.loads(word)
             word_objs.append(word_obj)
 
-update_word_objs() 
+
 
 transcript_path = WORD_SAVE_PATH + r"\transcript.jsonl"
 transcript_objs = []
@@ -354,17 +354,17 @@ def update_transcript_objs():
             transcript_obj = json.loads(transcript)
             transcript_objs.append(transcript_obj)
 
-update_transcript_objs()
-
 
 @rest_api.route("/api/words/list")
 class GetWordsList(Resource):
     def get(self):
+        update_word_objs() 
         return {"words": word_objs}, 200
 
 @rest_api.route("/api/transcript/list")
 class GetTranscriptList(Resource):
     def get(self):
+        update_transcript_objs()
         return {"transcripts": transcript_objs}, 200
 
 @rest_api.route('/api/words/add')
