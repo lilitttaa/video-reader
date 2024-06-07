@@ -105,7 +105,7 @@ class ConcurrentPunctuationAdder:
                 {
                     "role": "user",
                     "content": "".join(
-                        ["Add appropriate punctuation to the following:", content]
+                        ["Add appropriate punctuation(add Line break\n if necessary) to the following:", content]
                     ),
                 }
             ],
