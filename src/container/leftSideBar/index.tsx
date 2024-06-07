@@ -53,18 +53,6 @@ export function LeftSideBar () {
           icon: <BarChart />
         },
         {
-          title: 'Trigger',
-          link: '/trigger',
-          keyword: 'trigger',
-          icon: <RadioButtonChecked />
-        },
-        {
-          title: 'History',
-          link: '/history',
-          keyword: 'history',
-          icon: <History />
-        },
-        {
           title: 'Transcript',
           link: '/transcript',
           keyword: 'transcript',
