@@ -333,6 +333,7 @@ class VideoInfoAPI(Resource):
 words_path = WORD_SAVE_PATH + r"\word_record.jsonl"
 word_objs = []
 def update_word_objs():
+    global word_objs
     word_objs.clear()
     with open(words_path, "r", encoding="utf-8") as f:
         words = f.readlines()
@@ -340,12 +341,13 @@ def update_word_objs():
         for word in words:
             word_obj = json.loads(word)
             word_objs.append(word_obj)
-
+    word_objs = word_objs[::-1]
 
 
 transcript_path = WORD_SAVE_PATH + r"\transcript.jsonl"
 transcript_objs = []
 def update_transcript_objs():
+    global transcript_objs
     transcript_objs.clear()
     with open(transcript_path, "r", encoding="utf-8") as f:
         transcripts = f.readlines()
@@ -353,6 +355,7 @@ def update_transcript_objs():
         for transcript in transcripts:
             transcript_obj = json.loads(transcript)
             transcript_objs.append(transcript_obj)
+    transcript_objs = transcript_objs[::-1]
 
 
 @rest_api.route("/api/words/list")
