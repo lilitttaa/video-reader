@@ -69,6 +69,23 @@ export function TranscriptPanel () {
     fetchTranscriptsList()
   }, [])
 
+  function splitTextByLineBreaks (text: string) {
+	return text.split(/\\n|\n/)
+  }
+
+  function texts2Span (texts: string[]) {
+	console.log('texts',texts)
+	return texts.map((text, index) => {
+	  return (
+		<span key={index}>
+		  {text}
+		  <br />
+		</span>
+	  )
+	})
+  }
+
+
   return (
     <main className='main flex flex-col p-4 gap-10 overflow-y-auto'>
       <div className='flex flex-row justify-center'>
@@ -114,11 +131,11 @@ export function TranscriptPanel () {
                 <Typography variant='h5'>{wordInfo.title}</Typography>
                 <Typography variant='body1'>
                   <span className='font-bold'>Context: </span>
-                  {wordInfo.desc}
+				  {texts2Span(splitTextByLineBreaks(wordInfo.desc))}
                 </Typography>
                 <Typography variant='body1'>
                   <span className='font-bold'>Interpret: </span>
-                  {wordInfo.text}
+                  {texts2Span(splitTextByLineBreaks(wordInfo.text))}
                 </Typography>
               </li>
             )
