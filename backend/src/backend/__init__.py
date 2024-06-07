@@ -343,7 +343,6 @@ def update_word_objs():
 
 update_word_objs() 
 
-
 transcript_path = WORD_SAVE_PATH + r"\transcript.jsonl"
 transcript_objs = []
 def update_transcript_objs():
@@ -355,6 +354,7 @@ def update_transcript_objs():
             transcript_obj = json.loads(transcript)
             transcript_objs.append(transcript_obj)
 
+update_transcript_objs()
 
 
 @rest_api.route("/api/words/list")
