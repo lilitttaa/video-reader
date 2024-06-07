@@ -145,12 +145,12 @@ export function WordsPanel () {
       </div>
 
       <div>
-        <ul className='words-list w-full flex flex-col gap-2'>
+        <ul className='words-list w-full flex flex-col gap-4'>
           {wordInfoList.map((wordInfo, index) => {
             return (
               <li
                 key={index}
-                className='words-list-item bg-slate-400 w-auto rounded-xl pl-4 pr-4 pt-1 pb-1 flex flex-col gap-1'
+                className='words-list-item bg-slate-300 w-auto rounded-xl p-4 flex flex-col gap-1'
               >
                 <Typography variant='h5'>{wordInfo.word}</Typography>
                 <Typography variant='body1'>
