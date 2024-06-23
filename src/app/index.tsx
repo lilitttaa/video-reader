@@ -7,7 +7,7 @@ import {
   useLocation
 } from 'react-router-dom'
 import DefaultLayout from '../layout/defaultLayout'
-import { WordsPanel } from '../container/chartsPanel'
+import { WordsPanel } from '../container/wordPanel'
 import { GuestGuard, Login } from '../component/login'
 import { SignUp } from '../component/signUp'
 import { TranscriptPanel } from '../container/transcriptPanel'
