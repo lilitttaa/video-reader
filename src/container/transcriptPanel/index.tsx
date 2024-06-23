@@ -1,6 +1,13 @@
-import { Button, TextField, Typography } from '@mui/material'
+import {
+  Button,
+  Collapse,
+  IconButton,
+  TextField,
+  Typography
+} from '@mui/material'
 import { useEffect, useState } from 'react'
 import { getBackendUrl } from '../../api'
+import { ExpandLess, ExpandMore } from '@mui/icons-material'
 class TranscriptInfo {
   title: string
   desc: string
@@ -14,6 +21,10 @@ class TranscriptInfo {
 
 export function TranscriptPanel () {
   const [wordInfoList, setWordInfoList] = useState<TranscriptInfo[]>([]) //TODO
+  const [expandedMap, setExpandedMap] = useState(new Map<number, boolean>())
+  const isExpanded = (index: number) => {
+    return expandedMap.get(index) || false
+  }
   const [url, setUrl] = useState('')
   const fetchTranscriptsList = () => {
     console.log('fetchTranscriptsList')
@@ -70,21 +81,20 @@ export function TranscriptPanel () {
   }, [])
 
   function splitTextByLineBreaks (text: string) {
-	return text.split(/\\n|\n/)
+    return text.split(/\\n|\n/)
   }
 
   function texts2Span (texts: string[]) {
-	console.log('texts',texts)
-	return texts.map((text, index) => {
-	  return (
-		<span key={index}>
-		  {text}
-		  <br />
-		</span>
-	  )
-	})
+    console.log('texts', texts)
+    return texts.map((text, index) => {
+      return (
+        <span key={index}>
+          {text}
+          <br />
+        </span>
+      )
+    })
   }
-
 
   return (
     <main className='main flex flex-col p-4 gap-10 overflow-y-auto'>
@@ -129,14 +139,31 @@ export function TranscriptPanel () {
                 className='words-list-item bg-slate-300 w-auto rounded-xl p-8 flex flex-col gap-1'
               >
                 <Typography variant='h5'>{wordInfo.title}</Typography>
-                <Typography variant='body1'>
-                  <span className='font-bold'>Context: </span>
-				  {texts2Span(splitTextByLineBreaks(wordInfo.desc))}
-                </Typography>
-                <Typography variant='body1'>
-                  <span className='font-bold'>Interpret: </span>
-                  {texts2Span(splitTextByLineBreaks(wordInfo.text))}
-                </Typography>
+
+                <div className='flex justify-center'>
+                  <div className=''>
+                    <IconButton
+                      aria-label='add an alarm'
+                      onClick={() => {
+                        const newExpandedMap = new Map(expandedMap)
+                        newExpandedMap.set(index, !expandedMap.get(index))
+                        setExpandedMap(newExpandedMap)
+                      }}
+                    >
+                      {isExpanded(index) ? <ExpandLess /> : <ExpandMore />}
+                    </IconButton>
+                  </div>
+                </div>
+                <Collapse in={isExpanded(index)} timeout='auto' unmountOnExit>
+                  <Typography variant='body1'>
+                    <span className='font-bold'>Context: </span>
+                    {texts2Span(splitTextByLineBreaks(wordInfo.desc))}
+                  </Typography>
+                  <Typography variant='body1'>
+                    <span className='font-bold'>Interpret: </span>
+                    {texts2Span(splitTextByLineBreaks(wordInfo.text))}
+                  </Typography>
+                </Collapse>
               </li>
             )
           })}
