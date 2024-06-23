@@ -1,10 +1,17 @@
-import { Article, TrendingDown, TrendingUp } from '@mui/icons-material'
+import {
+  Article,
+  ExpandLess,
+  ExpandMore,
+  TrendingDown,
+  TrendingUp
+} from '@mui/icons-material'
 import {
   Autocomplete,
   Box,
   Button,
   CardActions,
   CardContent,
+  Collapse,
   IconButton,
   Input,
   Paper,
@@ -41,6 +48,7 @@ export function WordsPanel () {
   const [wordInfoList, setWordInfoList] = useState<WordInfo[]>([])
   const [word, setWord] = useState('')
   const [context, setContext] = useState('')
+  const [expandedMap, setExpandedMap] = useState(new Map<number, boolean>())
 
   const fetchWordsList = () => {
     console.log('fetchWordsList')
@@ -97,15 +105,19 @@ export function WordsPanel () {
     fetchWordsList()
   }, [])
 
+  const isExpanded = (index: number) => {
+	return expandedMap.get(index) ?? false
+  }
+
   return (
     <main className='main flex flex-col p-4 gap-10 overflow-y-auto'>
       <div className='flex flex-row justify-center'>
         <form
           className='w-80'
           onSubmit={e => {
-			console.log('event')
+            console.log('event')
             addWord()
-			e.preventDefault()
+            e.preventDefault()
           }}
         >
           <TextField
@@ -157,10 +169,31 @@ export function WordsPanel () {
                   <span className='font-bold'>Context: </span>
                   {wordInfo.context}
                 </Typography>
-                <Typography variant='body1'>
-                  <span className='font-bold'>Interpret: </span>
-                  {wordInfo.interpret}
-                </Typography>
+
+                <Collapse
+                  in={isExpanded(index)}
+                  timeout='auto'
+                  unmountOnExit
+                >
+                  <Typography variant='body1'>
+                    <span className='font-bold'>Interpret: </span>
+                    {wordInfo.interpret}
+                  </Typography>
+                </Collapse>
+                <div className='flex justify-center'>
+                  <div className=''>
+                    <IconButton
+                      aria-label='add an alarm'
+                      onClick={() => {
+                        const newExpandedMap = new Map(expandedMap)
+                        newExpandedMap.set(index, !expandedMap.get(index))
+                        setExpandedMap(newExpandedMap)
+                      }}
+                    >
+                      {isExpanded(index) ? <ExpandLess />:<ExpandMore /> }
+                    </IconButton>
+                  </div>
+                </div>
               </li>
             )
           })}
