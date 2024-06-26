@@ -45,29 +45,33 @@ class YoutubeScrapy:
             except Exception as e:
                 print("Error in get_description", e)
 
-    def _retrival_video_id_from_url(self, url: str) -> str:
+    def retrival_video_id_from_url(self, url: str) -> str:
         # Examples:
         # - http://youtu.be/SA2iWivDJiE
         # - http://www.youtube.com/watch?v=_oPAwA_Udwc&feature=feedu
         # - http://www.youtube.com/embed/SA2iWivDJiE
         # - http://www.youtube.com/v/SA2iWivDJiE?version=3&amp;hl=en_US
-        query = urlparse(url)
-        if query.hostname == "youtu.be":
-            return query.path[1:]
-        if query.hostname in {"www.youtube.com", "youtube.com", "music.youtube.com"}:
-            with suppress(KeyError):
-                return parse_qs(query.query)["list"][0]
-            if query.path == "/watch":
-                return parse_qs(query.query)["v"][0]
-            if query.path[:7] == "/watch/":
-                return query.path.split("/")[2]
-            if query.path[:7] == "/embed/":
-                return query.path.split("/")[2]
-            if query.path[:3] == "/v/":
-                return query.path.split("/")[2]
+        parsed_url = urlparse(url)
+        path = parsed_url.path
+        if path.endswith("/watch"):
+            query = parsed_url.query
+            parsed_query = parse_qs(query)
+            if "v" in parsed_query:
+                ids = parsed_query["v"]
+                video_id = ids if isinstance(ids, str) else ids[0]
+            else:
+                return None
+        else:
+            path = parsed_url.path.lstrip("/")
+            video_id = path.split("/")[-1]
+
+        if len(video_id) != 11:  # Video IDs are 11 characters long
+            return None
+
+        return video_id
 
     def get_transcript(self) -> List[dict]:
-        video_id = self._retrival_video_id_from_url(self._url)
+        video_id = self.retrival_video_id_from_url(self._url)
         try:
             transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
             return transcript_list

@@ -26,7 +26,7 @@ def test_Given_youtube_url_When_fetch_and_write_transcript_Then_return_transcrip
     youtube.write_transcript(transcript, file_path)
     assert os.path.exists(file_path)  # TODO check the file content
     
-@pytest.mark.current
+
 def test_langchain_transcript_loader():
     url = 'https://www.youtube.com/watch?v=A2-n6z8fjMM&t=4s'
     youtube = YoutubeScrapy(url)
@@ -112,3 +112,15 @@ def test_moonshot_summerize():
     split_docs = text_splitter.split_documents(docs)
     # print("split_docs:", split_docs)
     print(map_reduce_chain.run(split_docs))
+
+@pytest.mark.current
+def test_Given_youtube_url_When_retrieval_video_id_Then_return_video_id():
+    url = 'https://www.youtube.com/watch?v=9bZkp7q19f0'
+    youtube = YoutubeScrapy(url)
+    video_id = youtube.retrival_video_id_from_url(url)
+    assert video_id == '9bZkp7q19f0'
+    
+    url = 'https://www.youtube.com/watch?v=-KzJFzb-HQg&list=PL0Aonm3ZdM4S4VBR1wjtfCL9nPXVFbbWh&index=26'
+    video_id = youtube.retrival_video_id_from_url(url)
+    assert video_id == '-KzJFzb-HQg'
+    
